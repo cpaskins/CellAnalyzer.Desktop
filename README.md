@@ -54,7 +54,7 @@ This separation keeps the UI responsive and the analysis code reusable.
 ---
 
 ## Project Structure
-
+<img src="BlockDiagram.svg" alt="CellAnalyzer System" width="1200" />
 ```text
 CellAnalyzer.Desktop/
 │
