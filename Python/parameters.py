@@ -1,0 +1,27 @@
+def default_parameters():
+    return {
+        "minimum_area": 80,
+        "average_cell_area": 150,
+        "connected_cell_area": 20000,
+        "lower_intensity": 100,
+        "upper_intensity": 255,
+        "block_size": 100,
+        "scaling": 0.59,
+        "fluorescence": False,
+        "morph_checkbox": False,
+        "kernel_size": 3,
+        "noise": True,
+        "opening": True,
+        "closing": True,
+        "eroding": False,
+        "dilating": False,
+        "open_iter": 1,
+        "close_iter": 1,
+        "erode_iter": 1,
+        "dilate_iter": 1,
+        "hole_size": 800,
+        "hole_threshold": 200,
+        "image_method": "Sobel",
+        "fluorescence_scoring": False,
+        "contour_method": 2
+    }
