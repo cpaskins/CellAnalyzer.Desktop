@@ -66,3 +66,4 @@
 # GitHub Linguist overrides (language breakdown on repo page)
 ###############################################################################
 *.cs linguist-language="C#"
+Python/venv/** linguist-vendored=true
