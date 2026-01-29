@@ -2,8 +2,8 @@
 * linguist-detectable=true
 
 # Then exclude venv explicitly
-Python/venv/** linguist-detectable=false
-Python/venv/** linguist-vendored=true
+/Python/venv/** linguist-detectable=false
+/Python/venv/** linguist-vendored=true
 
 # And force C# label to parse correctly
 *.cs linguist-language="C#"
