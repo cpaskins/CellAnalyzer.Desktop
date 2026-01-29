@@ -1,2 +1,4 @@
 *.cs linguist-language="C#"
-Python/venv/** linguist-vendored=true
+# Hard exclude venv from Linguist stats
+/Python/venv/** linguist-vendored=true
+/Python/venv/** linguist-detectable=false
