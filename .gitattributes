@@ -65,15 +65,4 @@
 ###############################################################################
 # GitHub Linguist overrides (language breakdown on repo page)
 ###############################################################################
-*.cs     linguist-language="C#"
-*.csproj linguist-language="C#"
-*.sln    linguist-language="C#"
-*.xaml   linguist-language="C#"
-
-# Force Linguist to count C# files
-*.cs linguist-detectable=true
-*.xaml linguist-detectable=true
-
-# Ensure not treated as generated
-*.cs linguist-generated=false
-*.xaml linguist-generated=false
+*.cs linguist-language="C#"
