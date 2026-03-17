@@ -6,6 +6,8 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CellAnalyzer.Desktop.Models;
 
@@ -14,6 +16,10 @@ namespace CellAnalyzer.Desktop
     public partial class MainWindow : Window
     {
         private string? _imagePath;
+
+        // -------- Before/After slider state --------
+        private double _dividerFraction = 0.5; // 0..1, normalized position
+        private bool _isDraggingDivider;
 
         public MainWindow()
         {
@@ -64,6 +70,8 @@ namespace CellAnalyzer.Desktop
 
                 OriginalImage.Source = LoadBitmap(_imagePath);
                 OverlayImage.Source = null;
+                PlaceholderText.Visibility = Visibility.Collapsed;
+                HideComparisonSlider();
 
                 CellCountText.Text = "Cells: -";
                 TotalAreaText.Text = "Total Contour Area: -";
@@ -132,6 +140,7 @@ namespace CellAnalyzer.Desktop
                     throw new FileNotFoundException("Overlay image not found", overlayPath);
 
                 OverlayImage.Source = LoadBitmap(overlayPath);
+                ShowComparisonSlider();
 
                 StatusText.Text = $"Status: Done (saved to {runDir})";
             }
@@ -277,6 +286,71 @@ namespace CellAnalyzer.Desktop
             }
         }
 
+
+        // -------- Before/After comparison slider --------
+
+        private void CompareGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+            => UpdateDividerPosition(_dividerFraction * CompareGrid.ActualWidth);
+
+        private void CompareGrid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _isDraggingDivider = true;
+            CompareGrid.CaptureMouse();
+            UpdateDividerPosition(e.GetPosition(CompareGrid).X);
+        }
+
+        private void CompareGrid_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDraggingDivider) return;
+            UpdateDividerPosition(e.GetPosition(CompareGrid).X);
+        }
+
+        private void CompareGrid_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            _isDraggingDivider = false;
+            CompareGrid.ReleaseMouseCapture();
+        }
+
+        private void UpdateDividerPosition(double x)
+        {
+            double w = CompareGrid.ActualWidth;
+            double h = CompareGrid.ActualHeight;
+            if (w <= 0) return;
+
+            x = Math.Max(0, Math.Min(w, x));
+            _dividerFraction = x / w;
+
+            // Clip the overlay image to everything left of the divider
+            OverlayClip.Rect = new Rect(0, 0, x, h);
+
+            // Position the divider line (centred on x)
+            DividerLine.Margin = new Thickness(x - 1, 0, 0, 0);
+
+            // Position the drag handle (centred on x)
+            DividerHandle.Margin = new Thickness(x - 20, 0, 0, 0);
+        }
+
+        /// Call after an overlay is loaded to show the slider UI and reset to centre.
+        private void ShowComparisonSlider()
+        {
+            DividerLine.Visibility = Visibility.Visible;
+            DividerHandle.Visibility = Visibility.Visible;
+            BeforeLabel.Visibility = Visibility.Visible;
+            AfterLabel.Visibility = Visibility.Visible;
+            PlaceholderText.Visibility = Visibility.Collapsed;
+
+            _dividerFraction = 0.5;
+            UpdateDividerPosition(CompareGrid.ActualWidth * 0.5);
+        }
+
+        /// Call when the overlay is cleared so the slider chrome disappears.
+        private void HideComparisonSlider()
+        {
+            DividerLine.Visibility = Visibility.Collapsed;
+            DividerHandle.Visibility = Visibility.Collapsed;
+            BeforeLabel.Visibility = Visibility.Collapsed;
+            AfterLabel.Visibility = Visibility.Collapsed;
+        }
 
         private void OpenPipeline_Click(object sender, RoutedEventArgs e)
         {

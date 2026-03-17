@@ -149,47 +149,90 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- IMAGES GRID -->
-            <Grid Grid.Column="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <!-- IMAGES: Before/After comparison slider -->
+            <Border Grid.Column="1"
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrushTheme}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10">
 
-                <!-- Original -->
-                <Border Background="{DynamicResource PanelBrush}"
-                        Grid.Column="0"
-                        BorderBrush="{DynamicResource BorderBrushTheme}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10">
+                <Grid x:Name="CompareGrid"
+                      ClipToBounds="True"
+                      SizeChanged="CompareGrid_SizeChanged"
+                      MouseLeftButtonDown="CompareGrid_MouseDown"
+                      MouseLeftButtonUp="CompareGrid_MouseUp"
+                      MouseMove="CompareGrid_MouseMove"
+                      Cursor="SizeWE">
 
-                    <Viewbox Stretch="Uniform">
-                        <Image x:Name="OriginalImage"
-                               Stretch="Uniform"
-                               StretchDirection="DownOnly"
-                               SnapsToDevicePixels="True"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Viewbox>
-                </Border>
+                    <!-- Placeholder shown before any image is loaded -->
+                    <TextBlock x:Name="PlaceholderText"
+                               Text="Load an image to begin"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource BorderBrushTheme}"
+                               FontSize="14"/>
 
-                <!-- Overlay -->
-                <Border Background="{DynamicResource PanelBrush}"
-                        Grid.Column="1"
-                        BorderBrush="{DynamicResource BorderBrushTheme}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10">
+                    <!-- Before (original) – bottom layer, always full width -->
+                    <Image x:Name="OriginalImage"
+                           Stretch="Uniform"
+                           SnapsToDevicePixels="True"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                    <Viewbox Stretch="Uniform">
-                        <Image x:Name="OverlayImage"
-                               Stretch="Uniform"
-                               StretchDirection="DownOnly"
-                               SnapsToDevicePixels="True"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Viewbox>
-                </Border>
-            </Grid>
+                    <!-- After (overlay) – top layer, clipped to the left of the divider -->
+                    <Image x:Name="OverlayImage"
+                           Stretch="Uniform"
+                           SnapsToDevicePixels="True"
+                           RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.Clip>
+                            <RectangleGeometry x:Name="OverlayClip"/>
+                        </Image.Clip>
+                    </Image>
+
+                    <!-- Divider line -->
+                    <Rectangle x:Name="DividerLine"
+                               Width="2"
+                               VerticalAlignment="Stretch"
+                               HorizontalAlignment="Left"
+                               Fill="White"
+                               IsHitTestVisible="False"
+                               Visibility="Collapsed"/>
+
+                    <!-- Drag handle -->
+                    <Border x:Name="DividerHandle"
+                            Width="40" Height="40"
+                            CornerRadius="20"
+                            Background="White"
+                            BorderBrush="#44000000"
+                            BorderThickness="1"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False"
+                            Visibility="Collapsed">
+                        <TextBlock Text="⇔"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#333333"/>
+                    </Border>
+
+                    <!-- Before / After badges -->
+                    <Border x:Name="BeforeLabel"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="10" Background="#AA000000" CornerRadius="4" Padding="6,2"
+                            Visibility="Collapsed">
+                        <TextBlock Text="Before" Foreground="White" FontWeight="SemiBold" FontSize="11"/>
+                    </Border>
+
+                    <Border x:Name="AfterLabel"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="10" Background="#AA000000" CornerRadius="4" Padding="6,2"
+                            Visibility="Collapsed">
+                        <TextBlock Text="After" Foreground="White" FontWeight="SemiBold" FontSize="11"/>
+                    </Border>
+
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- Metrics -->
