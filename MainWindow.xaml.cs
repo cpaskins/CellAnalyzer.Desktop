@@ -275,6 +275,15 @@ namespace CellAnalyzer.Desktop
         }
 
 
+        private void OpenPipeline_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new PipelineWindow(this);
+            win.Show();
+        }
+
+        // Returns the current UI parameters; throws ArgumentException on invalid input.
+        internal AnalysisParameters GetCurrentParameters() => BuildParamsFromUi();
+
         // -------- Parameters --------
 
         private AnalysisParameters BuildParamsFromUi()

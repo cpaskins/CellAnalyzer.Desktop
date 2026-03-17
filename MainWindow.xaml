@@ -23,8 +23,12 @@
                 Style="{StaticResource SecondaryButtonStyle}"/>
                 <Button Content="Analyze"
                 Width="120"
+                Margin="0,0,10,0"
                 Click="Analyze_Click"/>
-                
+                <Button Content="Pipeline"
+                Width="120"
+                Click="OpenPipeline_Click"
+                Style="{StaticResource SecondaryButtonStyle}"/>
             </StackPanel>
         </Border>
 
