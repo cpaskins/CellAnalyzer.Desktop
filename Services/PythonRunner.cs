@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace CellAnalyzer.Desktop.Services
 {
@@ -59,9 +60,13 @@ namespace CellAnalyzer.Desktop.Services
             using var process = Process.Start(psi);
             if (process == null) throw new Exception("Failed to start engine.");
 
-            string stdout = process.StandardOutput.ReadToEnd();
-            string stderr = process.StandardError.ReadToEnd();
+            // Read stdout and stderr concurrently to prevent pipe-buffer deadlocks
+            // (cv2/numpy often emit warnings to stderr during import).
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
             process.WaitForExit();
+            string stdout = stdoutTask.Result;
+            string stderr = stderrTask.Result;
 
             if (process.ExitCode != 0)
                 throw new Exception(string.IsNullOrWhiteSpace(stderr) ? "Engine defaults failed." : stderr);
@@ -90,9 +95,12 @@ namespace CellAnalyzer.Desktop.Services
             if (process == null)
                 throw new Exception("Failed to start analysis engine process.");
 
-            string stdout = process.StandardOutput.ReadToEnd();
-            string stderr = process.StandardError.ReadToEnd();
+            // Read stdout and stderr concurrently to prevent pipe-buffer deadlocks.
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
             process.WaitForExit();
+            string stdout = stdoutTask.Result;
+            string stderr = stderrTask.Result;
 
             Debug.WriteLine(stdout);
             Debug.WriteLine(stderr);

@@ -4,6 +4,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using CellAnalyzer.Desktop.Models;
@@ -17,16 +18,18 @@ namespace CellAnalyzer.Desktop
         public MainWindow()
         {
             InitializeComponent();
-            LoadDefaultsFromEngine();
+            Loaded += async (_, _) => await LoadDefaultsFromEngineAsync();
         }
 
-        private void LoadDefaultsFromEngine()
+        private async Task LoadDefaultsFromEngineAsync()
         {
             try
             {
                 StatusText.Text = "Status: Loading defaults...";
 
-                string json = PythonRunner.GetDefaultsJson();
+                // Run the blocking engine call on a thread-pool thread so the UI
+                // stays responsive while Python/cv2 starts up.
+                string json = await Task.Run(() => PythonRunner.GetDefaultsJson());
 
                 var p = JsonSerializer.Deserialize<AnalysisParameters>(json, new JsonSerializerOptions
                 {
@@ -42,7 +45,7 @@ namespace CellAnalyzer.Desktop
             }
             catch (Exception ex)
             {
-                // Fallback strategy if engine fails
+                // Fallback: window is already visible so the user can still work
                 StatusText.Text = "Status: Defaults failed (using UI values)";
                 System.Diagnostics.Debug.WriteLine(ex);
             }
