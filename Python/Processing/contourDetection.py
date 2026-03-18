@@ -5,6 +5,20 @@ import math
 import matplotlib.pyplot as plt
 from scipy.ndimage import label, find_objects
 
+# BGR tuples for each user-selectable overlay color
+_OVERLAY_COLORS = {
+    "Green":  (36, 255, 12),
+    "Red":    (0,   0,  255),
+    "Blue":   (255, 0,    0),
+    "Purple": (255, 0,  255),
+    "White":  (255, 255, 255),
+}
+
+def _overlay_color(kwargs):
+    """Return the BGR overlay color from kwargs, defaulting to Green."""
+    name = kwargs.get("overlay_color", "Green")
+    return _OVERLAY_COLORS.get(name, _OVERLAY_COLORS["Green"])
+
 
 def cv2_contours(original, gray, morphed, **kwargs):
     """
@@ -36,7 +50,7 @@ def cv2_contours(original, gray, morphed, **kwargs):
     cells = 0
     cell_areas = []
     overlay = original.copy()  # Copy original image for drawing contours
-    color = (36, 255, 12) if not fluorescence else (0, 100, 255)
+    color = _overlay_color(kwargs)
     average_intensities = []
 
     # Process each contour
@@ -117,7 +131,7 @@ def scikit_contours(original, gray, morphed, **kwargs):
 
     # Create an overlay image for drawing contours
     overlay = original.copy()
-    overlay_color = (36, 255, 12) if not kwargs.get('fluorescence', True) else (0, 100, 255)
+    overlay_color = _overlay_color(kwargs)
 
     # Process each contour
     for contour in contours:
@@ -176,7 +190,7 @@ def basic_contours(original, gray, morphed, **kwargs):
 
     # Create an overlay image for drawing contours
     overlay = original.copy()
-    overlay_color = (36, 255, 12) if not kwargs.get('fluorescence', True) else (0, 100, 255)
+    overlay_color = _overlay_color(kwargs)
 
     # Process each labeled region
     for region_idx in range(1, num_features + 1):
@@ -261,7 +275,7 @@ def blobber(original, gray, morphed, min_threshold=100, max_threshold=255, min_a
     cells = 0
     cell_areas = []
     overlay = original.copy()  # Copy original image for drawing blobs
-    color = (36, 255, 12) if not fluorescence else (0, 100, 255)
+    color = _overlay_color(kwargs)
     average_intensities = []
 
     # Process each blob

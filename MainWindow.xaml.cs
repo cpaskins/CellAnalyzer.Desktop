@@ -232,6 +232,9 @@ namespace CellAnalyzer.Desktop
                 ContourMethodBox.SelectedIndex = p.contour_method;
             else
                 ContourMethodBox.SelectedIndex = 2; // fallback default
+
+            // ComboBox: OverlayColor
+            SetComboBoxToContent(OverlayColorBox, p.overlay_color ?? "Green");
         }
 
         private static void SetComboBoxToContent(System.Windows.Controls.ComboBox combo, string content)
@@ -320,13 +323,14 @@ namespace CellAnalyzer.Desktop
             x = Math.Max(0, Math.Min(w, x));
             _dividerFraction = x / w;
 
-            // Clip the overlay image to everything left of the divider
-            OverlayClip.Rect = new Rect(0, 0, x, h);
+            // Size the overlay image to the full grid so Stretch="Uniform" renders it
+            // identically to OriginalImage, then let the container clip at exactly x.
+            OverlayImage.Width  = w;
+            OverlayImage.Height = h;
+            OverlayContainer.Width = x;
 
-            // Position the divider line (centred on x)
-            DividerLine.Margin = new Thickness(x - 1, 0, 0, 0);
-
-            // Position the drag handle (centred on x)
+            // Position the divider line and handle centred on x
+            DividerLine.Margin   = new Thickness(x - 1, 0, 0, 0);
             DividerHandle.Margin = new Thickness(x - 20, 0, 0, 0);
         }
 
@@ -391,6 +395,9 @@ namespace CellAnalyzer.Desktop
             int contourMethod = ContourMethodBox.SelectedIndex;
             if (contourMethod < 0) contourMethod = 2;
 
+            // Overlay color as string
+            string overlayColor = (OverlayColorBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "Green";
+
             // Morph-related values (still needed even if morph is off)
             int kernelSize = ParseInt(KernelSizeBox.Text, "Kernel size");
             if (kernelSize < 1) kernelSize = 3;
@@ -421,6 +428,7 @@ namespace CellAnalyzer.Desktop
 
                 image_method = imageMethod,
                 contour_method = contourMethod,
+                overlay_color = overlayColor,
 
                 morph_checkbox = morph,
                 kernel_size = kernelSize,

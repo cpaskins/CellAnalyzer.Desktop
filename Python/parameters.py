@@ -23,5 +23,6 @@ def default_parameters():
         "hole_threshold": 200,
         "image_method": "Sobel",
         "fluorescence_scoring": False,
-        "contour_method": 2
+        "contour_method": 2,
+        "overlay_color": "Green"
     }

@@ -16,6 +16,7 @@ public sealed class AnalysisParameters
 
     public string image_method { get; set; } = "Sobel";
     public int contour_method { get; set; }
+    public string overlay_color { get; set; } = "Green";
 
     public bool morph_checkbox { get; set; }
     public int kernel_size { get; set; }

@@ -138,13 +138,21 @@
                     </ComboBox>
 
                     <TextBlock Text="Contour Method"/>
-                    <ComboBox x:Name="ContourMethodBox">
+                    <ComboBox x:Name="ContourMethodBox" Margin="0,0,0,12">
                         <ComboBoxItem Content="OpenCV"/>
                         <ComboBoxItem Content="SciKit"/>
                         <ComboBoxItem Content="Basic"/>
                         <ComboBoxItem Content="Blobber"/>
                     </ComboBox>
 
+                    <TextBlock Text="Overlay Color"/>
+                    <ComboBox x:Name="OverlayColorBox">
+                        <ComboBoxItem Content="Green"/>
+                        <ComboBoxItem Content="Red"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="White"/>
+                    </ComboBox>
 
                 </StackPanel>
             </ScrollViewer>
@@ -179,15 +187,19 @@
                            SnapsToDevicePixels="True"
                            RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                    <!-- After (overlay) – top layer, clipped to the left of the divider -->
-                    <Image x:Name="OverlayImage"
-                           Stretch="Uniform"
-                           SnapsToDevicePixels="True"
-                           RenderOptions.BitmapScalingMode="HighQuality">
-                        <Image.Clip>
-                            <RectangleGeometry x:Name="OverlayClip"/>
-                        </Image.Clip>
-                    </Image>
+                    <!-- After (overlay) – top layer, container width controls the clip edge.
+                         OverlayImage is sized to the full CompareGrid so Stretch="Uniform"
+                         renders it identically to OriginalImage; the container clips it at x. -->
+                    <Grid x:Name="OverlayContainer"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Stretch"
+                          Width="0"
+                          ClipToBounds="True">
+                        <Image x:Name="OverlayImage"
+                               Stretch="Uniform"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Grid>
 
                     <!-- Divider line -->
                     <Rectangle x:Name="DividerLine"
