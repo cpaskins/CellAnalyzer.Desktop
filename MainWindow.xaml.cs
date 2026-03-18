@@ -314,6 +314,13 @@ namespace CellAnalyzer.Desktop
             CompareGrid.ReleaseMouseCapture();
         }
 
+        private void CompareGrid_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            // Ensure drag state is cleared if capture is lost for any reason
+            // (e.g. Alt+Tab, system dialog) so the slider never gets stuck.
+            _isDraggingDivider = false;
+        }
+
         private void UpdateDividerPosition(double x)
         {
             double w = CompareGrid.ActualWidth;
@@ -324,10 +331,12 @@ namespace CellAnalyzer.Desktop
             _dividerFraction = x / w;
 
             // Size the overlay image to the full grid so Stretch="Uniform" renders it
-            // identically to OriginalImage, then let the container clip at exactly x.
-            OverlayImage.Width  = w;
-            OverlayImage.Height = h;
-            OverlayContainer.Width = x;
+            // identically to OriginalImage. Canvas passes infinite space to children so
+            // the explicit Width/Height are fully honoured; the Canvas clips at x.
+            OverlayImage.Width     = w;
+            OverlayImage.Height    = h;
+            OverlayContainer.Width  = x;
+            OverlayContainer.Height = h;
 
             // Position the divider line and handle centred on x
             DividerLine.Margin   = new Thickness(x - 1, 0, 0, 0);

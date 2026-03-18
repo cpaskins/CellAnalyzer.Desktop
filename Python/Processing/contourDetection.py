@@ -7,10 +7,10 @@ from scipy.ndimage import label, find_objects
 
 # BGR tuples for each user-selectable overlay color
 _OVERLAY_COLORS = {
-    "Green":  (36, 255, 12),
-    "Red":    (0,   0,  255),
-    "Blue":   (255, 0,    0),
-    "Purple": (255, 0,  255),
+    "Green":  (36,  255,  12),
+    "Red":    (0,   0,   255),
+    "Blue":   (255, 0,     0),
+    "Purple": (255, 107, 201),
     "White":  (255, 255, 255),
 }
 
