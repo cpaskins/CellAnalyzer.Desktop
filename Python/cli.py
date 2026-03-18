@@ -1,9 +1,7 @@
 import argparse
 import json
 import os
-import cv2
 
-from masterFunction import cell_detection
 from parameters import default_parameters
 
 
@@ -22,11 +20,18 @@ def main():
     args = parser.parse_args()
 
     # --- Defaults mode ---
+    # Only parameters.py is needed here — keep this path free of heavy imports
+    # (cv2, plotly, skimage, etc.) so defaults always load even if a processing
+    # dependency is missing or broken.
     if args.defaults:
         print(json.dumps(default_parameters(), indent=2))
         return
 
     # --- Normal analysis mode ---
+    # Defer heavy imports until we actually need them.
+    import cv2
+    from masterFunction import cell_detection
+
     if not args.image or not args.output:
         parser.error("--image and --output are required unless --defaults is used")
 

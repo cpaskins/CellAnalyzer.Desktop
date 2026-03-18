@@ -27,6 +27,21 @@ namespace CellAnalyzer.Desktop.Services
 
         private static (string exePath, string workingDir, string argumentsPrefix) ResolveEngine()
         {
+            // Prefer developer venv (so installed packages like plotly are available).
+            try
+            {
+                string pythonExe = FindAbove(Path.Combine("Python", "venv", "Scripts", "python.exe"));
+                string cliPath = FindAbove(Path.Combine("Python", "cli.py"));
+                string pythonDir = Path.GetDirectoryName(cliPath)!;
+
+                // Arguments will be: "<cliPath>" --image ... --output ... --params ...
+                return (pythonExe, pythonDir, $"\"{cliPath}\" ");
+            }
+            catch (FileNotFoundException)
+            {
+                // venv or cli.py not found; fall back to packaged engine if present
+            }
+
             // packaged engine EXE shipped with the app
             string packagedEngine = Path.Combine(BaseDir, "Python", "Engine", "CellAnalyzerEngine.exe");
             if (File.Exists(packagedEngine))
@@ -34,13 +49,7 @@ namespace CellAnalyzer.Desktop.Services
                 return (packagedEngine, Path.GetDirectoryName(packagedEngine)!, "");
             }
 
-            // 2) Dev fallback: run via venv python.exe + cli.py
-            string pythonExe = FindAbove(Path.Combine("Python", "venv", "Scripts", "python.exe"));
-            string cliPath = FindAbove(Path.Combine("Python", "cli.py"));
-            string pythonDir = Path.GetDirectoryName(cliPath)!;
-
-            // Arguments will be: "<cliPath>" --image ... --output ... --params ...
-            return (pythonExe, pythonDir, $"\"{cliPath}\" ");
+            throw new FileNotFoundException("Could not find a Python engine: no venv python.exe/cli.py or packaged engine were found above the app directory.");
         }
         public static string GetDefaultsJson()
         {
