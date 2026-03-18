@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import plotly.express as px
 from skimage import io, color, measure, filters, morphology
 
 def morphological_effects(image, opening, closing, erosion, dilation, iter1, iter2, iter3, iter4, kernel_size):
@@ -257,7 +256,9 @@ def plot_fluorescent_histogram(average_intensities, bin_size=10):
     Returns:
         plotly.graph_objects.Figure: Histogram plot of average fluorescent intensities.
     """
-    # Create the histogram using Plotly
+    # Create the histogram using Plotly (imported here so the rest of the
+    # module works even if plotly/narwhals are not installed)
+    import plotly.express as px
     fig = px.histogram(
         average_intensities,
         nbins=bin_size,
