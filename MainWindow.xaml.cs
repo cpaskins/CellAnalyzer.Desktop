@@ -80,7 +80,7 @@ namespace CellAnalyzer.Desktop
             }
         }
 
-        private void Analyze_Click(object sender, RoutedEventArgs e)
+        private async void Analyze_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_imagePath))
             {
@@ -88,51 +88,53 @@ namespace CellAnalyzer.Desktop
                 return;
             }
 
+            // Validate parameters before blocking the UI
+            AnalysisParameters p;
             try
             {
-                StatusText.Text = "Status: Preparing run...";
+                p = BuildParamsFromUi();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Invalid Parameters",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                // Create run folder so outputs never go in the image folder
+            AnalyzeButton.IsEnabled      = false;
+            SpinnerOverlay.Visibility    = Visibility.Visible;
+            StatusText.Text              = "Status: Analyzing…";
+
+            try
+            {
                 string runsRoot = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "CellAnalyzer",
-                    "runs"
-                );
+                    "CellAnalyzer", "runs");
 
-                string runId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string runId  = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string runDir = Path.Combine(runsRoot, runId);
                 Directory.CreateDirectory(runDir);
 
                 string outputJson = Path.Combine(runDir, "result.json");
                 string paramsJson = Path.Combine(runDir, "params.json");
 
-                // Build params from UI (with validation)
-                var p = BuildParamsFromUi();
+                File.WriteAllText(paramsJson,
+                    JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true }));
 
-                // Write params.json for Python
-                File.WriteAllText(
-                    paramsJson,
-                    JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true })
-                );
+                // Run Python off the UI thread so the spinner animates
+                await Task.Run(() => PythonRunner.Run(_imagePath, outputJson, paramsJson));
 
-                StatusText.Text = "Status: Analyzing...";
-
-                // Run Python with params
-                PythonRunner.Run(_imagePath, outputJson, paramsJson);
-
-                // Read results
                 string jsonText = File.ReadAllText(outputJson);
-                using var doc = JsonDocument.Parse(jsonText);
+                using var doc   = JsonDocument.Parse(jsonText);
 
-                int cellCount = doc.RootElement.GetProperty("counts").GetProperty("cell_count").GetInt32();
-                int totalContourArea = doc.RootElement.GetProperty("areas").GetProperty("total_contour_area").GetInt32();
-                double meanContourArea = doc.RootElement.GetProperty("areas").GetProperty("mean_contour_area").GetDouble();
+                int    cellCount       = doc.RootElement.GetProperty("counts").GetProperty("cell_count").GetInt32();
+                int    totalArea       = doc.RootElement.GetProperty("areas").GetProperty("total_contour_area").GetInt32();
+                double meanArea        = doc.RootElement.GetProperty("areas").GetProperty("mean_contour_area").GetDouble();
 
                 CellCountText.Text = $"Cells: {cellCount}";
-                TotalAreaText.Text = $"Total Contour Area: {totalContourArea} µm²";
-                MeanAreaText.Text = $"Mean Contour Area: {meanContourArea} µm²";
+                TotalAreaText.Text = $"Total Contour Area: {totalArea} µm²";
+                MeanAreaText.Text  = $"Mean Contour Area: {meanArea:F2} µm²";
 
-                // Load overlay path from JSON and display it
                 string overlayFile = doc.RootElement.GetProperty("images").GetProperty("overlay").GetString()!;
                 string overlayPath = Path.Combine(runDir, overlayFile);
 
@@ -148,6 +150,11 @@ namespace CellAnalyzer.Desktop
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 StatusText.Text = "Status: Error";
+            }
+            finally
+            {
+                SpinnerOverlay.Visibility = Visibility.Collapsed;
+                AnalyzeButton.IsEnabled   = true;
             }
         }
 

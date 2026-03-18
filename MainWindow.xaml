@@ -21,7 +21,8 @@
                 Margin="0,0,10,0"
                 Click="LoadImage_Click"
                 Style="{StaticResource SecondaryButtonStyle}"/>
-                <Button Content="Analyze"
+                <Button x:Name="AnalyzeButton"
+                Content="Analyze"
                 Width="120"
                 Margin="0,0,10,0"
                 Click="Analyze_Click"/>
@@ -228,6 +229,26 @@
                                    VerticalAlignment="Center"
                                    FontSize="14"
                                    Foreground="#333333"/>
+                    </Border>
+
+                    <!-- Spinner overlay – shown while analysis is running -->
+                    <Border x:Name="SpinnerOverlay"
+                            Background="#CC101520"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="True">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True"
+                                         Width="160" Height="4"
+                                         Foreground="{DynamicResource AccentBrush}"
+                                         Background="#33FFFFFF"
+                                         BorderThickness="0"
+                                         Margin="0,0,0,10"/>
+                            <TextBlock Text="Analyzing image…"
+                                       HorizontalAlignment="Center"
+                                       Foreground="White"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
                     </Border>
 
                     <!-- Before / After badges -->
