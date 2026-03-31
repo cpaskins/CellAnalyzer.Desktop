@@ -1,0 +1,6 @@
+opencv-python
+numpy
+scipy
+scikit-image
+plotly
+narwhals
