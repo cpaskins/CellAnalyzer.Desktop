@@ -1,11 +1,11 @@
-﻿namespace CellAnalyzer.Desktop.Models
+namespace CellAnalyzer.Desktop.Models
 {
     public class CellAnalysisResult
     {
-        public Counts counts { get; set; }
-        public Areas areas { get; set; }
-        public Fluorescence fluorescence { get; set; }
-        public string overlay_base64 { get; set; }
+        public Counts? counts { get; set; }
+        public Areas? areas { get; set; }
+        public Fluorescence? fluorescence { get; set; }
+        public string? overlay_base64 { get; set; }
     }
 
     public class Counts
@@ -22,6 +22,6 @@
 
     public class Fluorescence
     {
-        public double[] average_intensities { get; set; }
+        public double[]? average_intensities { get; set; }
     }
 }
