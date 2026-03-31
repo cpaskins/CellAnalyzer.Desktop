@@ -1,3 +1,6 @@
 *.cs linguist-language="C#"
 *.py linguist-language=Python
-# linguist bump
+
+# PyInstaller build/dist output – generated artifacts, exclude from stats
+Python/build/** linguist-generated=true
+Python/dist/**  linguist-generated=true
