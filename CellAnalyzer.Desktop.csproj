@@ -13,11 +13,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
-  <!-- App icon -->
+  <!-- App icon (embedded as resource so WPF can load it from the assembly at runtime) -->
   <ItemGroup>
-    <Content Include="Assets\app.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
   <!-- Python source files (dev mode only — not needed when the packaged engine is present) -->
