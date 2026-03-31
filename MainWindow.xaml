@@ -21,10 +21,15 @@
                 Margin="0,0,10,0"
                 Click="LoadImage_Click"
                 Style="{StaticResource SecondaryButtonStyle}"/>
-                <Button Content="Analyze"
+                <Button x:Name="AnalyzeButton"
+                Content="Analyze"
                 Width="120"
+                Margin="0,0,10,0"
                 Click="Analyze_Click"/>
-                
+                <Button Content="Pipeline"
+                Width="120"
+                Click="OpenPipeline_Click"
+                Style="{StaticResource SecondaryButtonStyle}"/>
             </StackPanel>
         </Border>
 
@@ -134,58 +139,135 @@
                     </ComboBox>
 
                     <TextBlock Text="Contour Method"/>
-                    <ComboBox x:Name="ContourMethodBox">
+                    <ComboBox x:Name="ContourMethodBox" Margin="0,0,0,12">
                         <ComboBoxItem Content="OpenCV"/>
                         <ComboBoxItem Content="SciKit"/>
                         <ComboBoxItem Content="Basic"/>
                         <ComboBoxItem Content="Blobber"/>
                     </ComboBox>
 
+                    <TextBlock Text="Overlay Color"/>
+                    <ComboBox x:Name="OverlayColorBox">
+                        <ComboBoxItem Content="Green"/>
+                        <ComboBoxItem Content="Red"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="White"/>
+                    </ComboBox>
 
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- IMAGES GRID -->
-            <Grid Grid.Column="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <!-- IMAGES: Before/After comparison slider -->
+            <Border Grid.Column="1"
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrushTheme}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10">
 
-                <!-- Original -->
-                <Border Background="{DynamicResource PanelBrush}"
-                        Grid.Column="0"
-                        BorderBrush="{DynamicResource BorderBrushTheme}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10">
+                <Grid x:Name="CompareGrid"
+                      ClipToBounds="True"
+                      SizeChanged="CompareGrid_SizeChanged"
+                      MouseLeftButtonDown="CompareGrid_MouseDown"
+                      MouseLeftButtonUp="CompareGrid_MouseUp"
+                      MouseMove="CompareGrid_MouseMove"
+                      LostMouseCapture="CompareGrid_LostMouseCapture"
+                      Cursor="SizeWE">
 
-                    <Viewbox Stretch="Uniform">
-                        <Image x:Name="OriginalImage"
-                               Stretch="Uniform"
-                               StretchDirection="DownOnly"
-                               SnapsToDevicePixels="True"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Viewbox>
-                </Border>
+                    <!-- Placeholder shown before any image is loaded -->
+                    <TextBlock x:Name="PlaceholderText"
+                               Text="Load an image to begin"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource BorderBrushTheme}"
+                               FontSize="14"/>
 
-                <!-- Overlay -->
-                <Border Background="{DynamicResource PanelBrush}"
-                        Grid.Column="1"
-                        BorderBrush="{DynamicResource BorderBrushTheme}"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10">
+                    <!-- Before (original) – bottom layer, always full width -->
+                    <Image x:Name="OriginalImage"
+                           Stretch="Uniform"
+                           SnapsToDevicePixels="True"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                    <Viewbox Stretch="Uniform">
+                    <!-- After (overlay) – top layer, container width controls the clip edge.
+                         Canvas (not Grid) is used so it passes infinite available space to
+                         OverlayImage; the explicit Width/Height we set in code are honoured
+                         in full, making Stretch="Uniform" render identically to OriginalImage. -->
+                    <Canvas x:Name="OverlayContainer"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Width="0" Height="0"
+                            ClipToBounds="True">
                         <Image x:Name="OverlayImage"
                                Stretch="Uniform"
-                               StretchDirection="DownOnly"
                                SnapsToDevicePixels="True"
                                RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Viewbox>
-                </Border>
-            </Grid>
+                    </Canvas>
+
+                    <!-- Divider line -->
+                    <Rectangle x:Name="DividerLine"
+                               Width="2"
+                               VerticalAlignment="Stretch"
+                               HorizontalAlignment="Left"
+                               Fill="White"
+                               IsHitTestVisible="False"
+                               Visibility="Collapsed"/>
+
+                    <!-- Drag handle -->
+                    <Border x:Name="DividerHandle"
+                            Width="40" Height="40"
+                            CornerRadius="20"
+                            Background="White"
+                            BorderBrush="#44000000"
+                            BorderThickness="1"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False"
+                            Visibility="Collapsed">
+                        <TextBlock Text="⇔"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#333333"/>
+                    </Border>
+
+                    <!-- Spinner overlay – shown while analysis is running -->
+                    <Border x:Name="SpinnerOverlay"
+                            Background="#CC101520"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="True">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True"
+                                         Width="160" Height="4"
+                                         Foreground="{DynamicResource AccentBrush}"
+                                         Background="#33FFFFFF"
+                                         BorderThickness="0"
+                                         Margin="0,0,0,10"/>
+                            <TextBlock Text="Analyzing image…"
+                                       HorizontalAlignment="Center"
+                                       Foreground="White"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Before / After badges -->
+                    <Border x:Name="BeforeLabel"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="10" Background="#AA000000" CornerRadius="4" Padding="6,2"
+                            Visibility="Collapsed">
+                        <TextBlock Text="Before" Foreground="White" FontWeight="SemiBold" FontSize="11"/>
+                    </Border>
+
+                    <Border x:Name="AfterLabel"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="10" Background="#AA000000" CornerRadius="4" Padding="6,2"
+                            Visibility="Collapsed">
+                        <TextBlock Text="After" Foreground="White" FontWeight="SemiBold" FontSize="11"/>
+                    </Border>
+
+                </Grid>
+            </Border>
         </Grid>
 
         <!-- Metrics -->

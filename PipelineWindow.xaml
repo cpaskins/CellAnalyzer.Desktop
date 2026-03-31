@@ -1,0 +1,442 @@
+<Window x:Class="CellAnalyzer.Desktop.PipelineWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cell Analyzer – Pipeline"
+        Height="900" Width="1300"
+        Background="{DynamicResource BgBrush}">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="160"/>
+            <RowDefinition Height="5"/>
+            <RowDefinition Height="330" MinHeight="240"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Toolbar ── -->
+        <Border Grid.Row="0"
+                Background="#FF0D1016"
+                CornerRadius="12"
+                Padding="12"
+                Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: image management -->
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <Button Content="Add Images"
+                            Width="110" Margin="0,0,8,0"
+                            Click="AddImages_Click"
+                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="Add Folder"
+                            Width="110" Margin="0,0,8,0"
+                            Click="AddFolder_Click"
+                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="Remove Selected"
+                            Width="130" Margin="0,0,8,0"
+                            Click="RemoveSelected_Click"
+                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="Clear All"
+                            Width="90"
+                            Click="ClearAll_Click"
+                            Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
+
+                <!-- Right: run controls + progress -->
+                <StackPanel Orientation="Horizontal"
+                            Grid.Column="2"
+                            VerticalAlignment="Center">
+                    <TextBlock x:Name="ProgressText"
+                               Text="0 / 0"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0"
+                               FontWeight="Bold"/>
+                    <ProgressBar x:Name="PipelineProgressBar"
+                                 Width="180" Height="6"
+                                 Minimum="0" Maximum="1" Value="0"
+                                 Foreground="{DynamicResource AccentBrush}"
+                                 Background="{DynamicResource BorderBrushTheme}"
+                                 BorderThickness="0"
+                                 Margin="0,0,16,0"/>
+                    <Button x:Name="RunButton"
+                            Content="Run Pipeline"
+                            Width="120"
+                            Click="RunPipeline_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── Results DataGrid ── -->
+        <DataGrid Grid.Row="1"
+                  x:Name="ResultsGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  IsReadOnly="True"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column"
+                  Background="{DynamicResource PanelBrush}"
+                  Foreground="{DynamicResource TextBrush}"
+                  RowBackground="{DynamicResource PanelBrush}"
+                  AlternatingRowBackground="#FF1A1F28"
+                  BorderBrush="{DynamicResource BorderBrushTheme}"
+                  BorderThickness="1"
+                  HorizontalGridLinesBrush="{DynamicResource BorderBrushTheme}"
+                  VerticalGridLinesBrush="Transparent"
+                  ColumnHeaderHeight="32"
+                  RowHeight="28"
+                  SelectionChanged="ResultsGrid_SelectionChanged">
+
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="#FF0D1016"/>
+                    <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="10,0"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushTheme}"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="10,0"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#FF223A64"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#FF1B2130"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#FF1B2D4A"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#"
+                                    Binding="{Binding Index}"
+                                    Width="50"/>
+                <DataGridTextColumn Header="File Name"
+                                    Binding="{Binding FileName}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Status"
+                                    Binding="{Binding StatusDisplay}"
+                                    Width="100"/>
+                <DataGridTextColumn Header="Cell Count"
+                                    Binding="{Binding CellCountDisplay}"
+                                    Width="100"/>
+                <DataGridTextColumn Header="Total Area (µm²)"
+                                    Binding="{Binding TotalAreaDisplay}"
+                                    Width="140"/>
+                <DataGridTextColumn Header="Mean Area (µm²)"
+                                    Binding="{Binding MeanAreaDisplay}"
+                                    Width="140"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ── GridSplitter ── -->
+        <GridSplitter Grid.Row="2"
+                      Height="5"
+                      HorizontalAlignment="Stretch"
+                      Background="Transparent"
+                      Cursor="SizeNS"/>
+
+        <!-- ── Bottom panel: Preview / Charts / Stats tabs ── -->
+        <TabControl Grid.Row="3"
+                    Background="{DynamicResource PanelBrush}"
+                    BorderBrush="{DynamicResource BorderBrushTheme}"
+                    BorderThickness="1">
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="Background" Value="#FF0D1016"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="16,7"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#FF1B2130"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TabControl.Resources>
+
+            <!-- ── Tab 1: Preview ── -->
+            <TabItem Header="Preview">
+                <Grid Margin="6,4,6,6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Navigation bar -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal"
+                                HorizontalAlignment="Center" Margin="0,2,0,6">
+                        <Button Content="&#x2190; Prev"
+                                Width="80"
+                                Click="PrevImage_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                        <TextBlock x:Name="PreviewIndexText"
+                                   Text="–"
+                                   VerticalAlignment="Center"
+                                   Margin="18,0"
+                                   FontWeight="Bold"
+                                   MinWidth="70"
+                                   TextAlignment="Center"
+                                   Foreground="{DynamicResource SubtleTextBrush}"/>
+                        <Button Content="Next &#x2192;"
+                                Width="80"
+                                Click="NextImage_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+
+                    <!-- Images -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0"
+                                Background="{DynamicResource BgBrush}"
+                                BorderBrush="{DynamicResource BorderBrushTheme}"
+                                BorderThickness="1" CornerRadius="8"
+                                Padding="6" Margin="0,0,4,0">
+                            <Grid>
+                                <Image x:Name="PreviewOriginal"
+                                       Stretch="Uniform"
+                                       SnapsToDevicePixels="True"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <TextBlock Text="ORIGINAL"
+                                           HorizontalAlignment="Left" VerticalAlignment="Top"
+                                           Margin="6,4"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource BgBrush}"
+                                BorderBrush="{DynamicResource BorderBrushTheme}"
+                                BorderThickness="1" CornerRadius="8"
+                                Padding="6" Margin="4,0,0,0">
+                            <Grid>
+                                <Image x:Name="PreviewOverlay"
+                                       Stretch="Uniform"
+                                       SnapsToDevicePixels="True"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <TextBlock Text="OVERLAY"
+                                           HorizontalAlignment="Left" VerticalAlignment="Top"
+                                           Margin="6,4"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="PreviewFileNameText"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top"
+                                           Margin="6,4"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ── Tab 2: Charts ── -->
+            <TabItem Header="Charts">
+                <Grid Margin="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Cell count bar chart -->
+                    <Border Grid.Column="0"
+                            Background="#FF0D1016"
+                            CornerRadius="8" Padding="12,10"
+                            Margin="0,0,4,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Text="CELL COUNT PER IMAGE"
+                                       Foreground="{DynamicResource SubtleTextBrush}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <Viewbox Stretch="Uniform" StretchDirection="Both">
+                                <Canvas x:Name="CellCountChart" Width="500" Height="160"/>
+                            </Viewbox>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Mean area bar chart -->
+                    <Border Grid.Column="1"
+                            Background="#FF0D1016"
+                            CornerRadius="8" Padding="12,10"
+                            Margin="4,0,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Text="MEAN AREA (µm²) PER IMAGE"
+                                       Foreground="{DynamicResource SubtleTextBrush}"
+                                       FontSize="10" FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <Viewbox Stretch="Uniform" StretchDirection="Both">
+                                <Canvas x:Name="AreaChart" Width="500" Height="160"/>
+                            </Viewbox>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ── Tab 3: Stats ── -->
+            <TabItem Header="Stats">
+                <Grid Margin="12,10,12,10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- ── Run overview ── -->
+                    <TextBlock Grid.Row="0"
+                               Text="RUN OVERVIEW"
+                               Foreground="{DynamicResource SubtleTextBrush}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Margin="0,0,0,6"/>
+                    <UniformGrid Grid.Row="1" Columns="3">
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="0,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="PROCESSED" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsProcessed" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="ERRORS" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsErrors" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="TOTAL CELLS" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsTotalCells" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- ── Cell count stats ── -->
+                    <TextBlock Grid.Row="3"
+                               Text="CELL COUNT"
+                               Foreground="{DynamicResource SubtleTextBrush}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Margin="0,0,0,6"/>
+                    <UniformGrid Grid.Row="4" Columns="4">
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="0,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MIN" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsCellMin" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MAX" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsCellMax" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MEAN" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsCellMean" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="STD DEV" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsCellStdDev" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- ── Mean area stats ── -->
+                    <TextBlock Grid.Row="6"
+                               Text="MEAN AREA (µm²)"
+                               Foreground="{DynamicResource SubtleTextBrush}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Margin="0,0,0,6"/>
+                    <UniformGrid Grid.Row="7" Columns="4">
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="0,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MIN" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsAreaMin" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MAX" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsAreaMax" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,5,0">
+                            <StackPanel>
+                                <TextBlock Text="MEAN" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsAreaMean" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FF0D1016" CornerRadius="8" Padding="14,10" Margin="5,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="STD DEV" Foreground="{DynamicResource SubtleTextBrush}"
+                                           FontSize="9" FontWeight="SemiBold" Margin="0,0,0,3"/>
+                                <TextBlock x:Name="StatsAreaStdDev" Text="–"
+                                           FontSize="22" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

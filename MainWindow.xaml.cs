@@ -4,7 +4,10 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using CellAnalyzer.Desktop.Models;
 
@@ -14,19 +17,25 @@ namespace CellAnalyzer.Desktop
     {
         private string? _imagePath;
 
+        // -------- Before/After slider state --------
+        private double _dividerFraction = 0.5; // 0..1, normalized position
+        private bool _isDraggingDivider;
+
         public MainWindow()
         {
             InitializeComponent();
-            LoadDefaultsFromEngine();
+            Loaded += async (_, _) => await LoadDefaultsFromEngineAsync();
         }
 
-        private void LoadDefaultsFromEngine()
+        private async Task LoadDefaultsFromEngineAsync()
         {
             try
             {
                 StatusText.Text = "Status: Loading defaults...";
 
-                string json = PythonRunner.GetDefaultsJson();
+                // Run the blocking engine call on a thread-pool thread so the UI
+                // stays responsive while Python/cv2 starts up.
+                string json = await Task.Run(() => PythonRunner.GetDefaultsJson());
 
                 var p = JsonSerializer.Deserialize<AnalysisParameters>(json, new JsonSerializerOptions
                 {
@@ -42,7 +51,7 @@ namespace CellAnalyzer.Desktop
             }
             catch (Exception ex)
             {
-                // Fallback strategy if engine fails
+                // Fallback: window is already visible so the user can still work
                 StatusText.Text = "Status: Defaults failed (using UI values)";
                 System.Diagnostics.Debug.WriteLine(ex);
             }
@@ -61,6 +70,8 @@ namespace CellAnalyzer.Desktop
 
                 OriginalImage.Source = LoadBitmap(_imagePath);
                 OverlayImage.Source = null;
+                PlaceholderText.Visibility = Visibility.Collapsed;
+                HideComparisonSlider();
 
                 CellCountText.Text = "Cells: -";
                 TotalAreaText.Text = "Total Contour Area: -";
@@ -69,7 +80,7 @@ namespace CellAnalyzer.Desktop
             }
         }
 
-        private void Analyze_Click(object sender, RoutedEventArgs e)
+        private async void Analyze_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_imagePath))
             {
@@ -77,51 +88,53 @@ namespace CellAnalyzer.Desktop
                 return;
             }
 
+            // Validate parameters before blocking the UI
+            AnalysisParameters p;
             try
             {
-                StatusText.Text = "Status: Preparing run...";
+                p = BuildParamsFromUi();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Invalid Parameters",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                // Create run folder so outputs never go in the image folder
+            AnalyzeButton.IsEnabled      = false;
+            SpinnerOverlay.Visibility    = Visibility.Visible;
+            StatusText.Text              = "Status: Analyzing…";
+
+            try
+            {
                 string runsRoot = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "CellAnalyzer",
-                    "runs"
-                );
+                    "CellAnalyzer", "runs");
 
-                string runId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string runId  = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string runDir = Path.Combine(runsRoot, runId);
                 Directory.CreateDirectory(runDir);
 
                 string outputJson = Path.Combine(runDir, "result.json");
                 string paramsJson = Path.Combine(runDir, "params.json");
 
-                // Build params from UI (with validation)
-                var p = BuildParamsFromUi();
+                File.WriteAllText(paramsJson,
+                    JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true }));
 
-                // Write params.json for Python
-                File.WriteAllText(
-                    paramsJson,
-                    JsonSerializer.Serialize(p, new JsonSerializerOptions { WriteIndented = true })
-                );
+                // Run Python off the UI thread so the spinner animates
+                await Task.Run(() => PythonRunner.Run(_imagePath, outputJson, paramsJson));
 
-                StatusText.Text = "Status: Analyzing...";
-
-                // Run Python with params
-                PythonRunner.Run(_imagePath, outputJson, paramsJson);
-
-                // Read results
                 string jsonText = File.ReadAllText(outputJson);
-                using var doc = JsonDocument.Parse(jsonText);
+                using var doc   = JsonDocument.Parse(jsonText);
 
-                int cellCount = doc.RootElement.GetProperty("counts").GetProperty("cell_count").GetInt32();
-                int totalContourArea = doc.RootElement.GetProperty("areas").GetProperty("total_contour_area").GetInt32();
-                double meanContourArea = doc.RootElement.GetProperty("areas").GetProperty("mean_contour_area").GetDouble();
+                int    cellCount       = doc.RootElement.GetProperty("counts").GetProperty("cell_count").GetInt32();
+                int    totalArea       = doc.RootElement.GetProperty("areas").GetProperty("total_contour_area").GetInt32();
+                double meanArea        = doc.RootElement.GetProperty("areas").GetProperty("mean_contour_area").GetDouble();
 
                 CellCountText.Text = $"Cells: {cellCount}";
-                TotalAreaText.Text = $"Total Contour Area: {totalContourArea} µm²";
-                MeanAreaText.Text = $"Mean Contour Area: {meanContourArea} µm²";
+                TotalAreaText.Text = $"Total Contour Area: {totalArea} µm²";
+                MeanAreaText.Text  = $"Mean Contour Area: {meanArea:F2} µm²";
 
-                // Load overlay path from JSON and display it
                 string overlayFile = doc.RootElement.GetProperty("images").GetProperty("overlay").GetString()!;
                 string overlayPath = Path.Combine(runDir, overlayFile);
 
@@ -129,6 +142,7 @@ namespace CellAnalyzer.Desktop
                     throw new FileNotFoundException("Overlay image not found", overlayPath);
 
                 OverlayImage.Source = LoadBitmap(overlayPath);
+                ShowComparisonSlider();
 
                 StatusText.Text = $"Status: Done (saved to {runDir})";
             }
@@ -136,6 +150,11 @@ namespace CellAnalyzer.Desktop
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 StatusText.Text = "Status: Error";
+            }
+            finally
+            {
+                SpinnerOverlay.Visibility = Visibility.Collapsed;
+                AnalyzeButton.IsEnabled   = true;
             }
         }
 
@@ -220,6 +239,9 @@ namespace CellAnalyzer.Desktop
                 ContourMethodBox.SelectedIndex = p.contour_method;
             else
                 ContourMethodBox.SelectedIndex = 2; // fallback default
+
+            // ComboBox: OverlayColor
+            SetComboBoxToContent(OverlayColorBox, p.overlay_color ?? "Green");
         }
 
         private static void SetComboBoxToContent(System.Windows.Controls.ComboBox combo, string content)
@@ -275,6 +297,90 @@ namespace CellAnalyzer.Desktop
         }
 
 
+        // -------- Before/After comparison slider --------
+
+        private void CompareGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+            => UpdateDividerPosition(_dividerFraction * CompareGrid.ActualWidth);
+
+        private void CompareGrid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _isDraggingDivider = true;
+            CompareGrid.CaptureMouse();
+            UpdateDividerPosition(e.GetPosition(CompareGrid).X);
+        }
+
+        private void CompareGrid_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDraggingDivider) return;
+            UpdateDividerPosition(e.GetPosition(CompareGrid).X);
+        }
+
+        private void CompareGrid_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            _isDraggingDivider = false;
+            CompareGrid.ReleaseMouseCapture();
+        }
+
+        private void CompareGrid_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            // Ensure drag state is cleared if capture is lost for any reason
+            // (e.g. Alt+Tab, system dialog) so the slider never gets stuck.
+            _isDraggingDivider = false;
+        }
+
+        private void UpdateDividerPosition(double x)
+        {
+            double w = CompareGrid.ActualWidth;
+            double h = CompareGrid.ActualHeight;
+            if (w <= 0) return;
+
+            x = Math.Max(0, Math.Min(w, x));
+            _dividerFraction = x / w;
+
+            // Size the overlay image to the full grid so Stretch="Uniform" renders it
+            // identically to OriginalImage. Canvas passes infinite space to children so
+            // the explicit Width/Height are fully honoured; the Canvas clips at x.
+            OverlayImage.Width     = w;
+            OverlayImage.Height    = h;
+            OverlayContainer.Width  = x;
+            OverlayContainer.Height = h;
+
+            // Position the divider line and handle centred on x
+            DividerLine.Margin   = new Thickness(x - 1, 0, 0, 0);
+            DividerHandle.Margin = new Thickness(x - 20, 0, 0, 0);
+        }
+
+        /// Call after an overlay is loaded to show the slider UI and reset to centre.
+        private void ShowComparisonSlider()
+        {
+            DividerLine.Visibility = Visibility.Visible;
+            DividerHandle.Visibility = Visibility.Visible;
+            BeforeLabel.Visibility = Visibility.Visible;
+            AfterLabel.Visibility = Visibility.Visible;
+            PlaceholderText.Visibility = Visibility.Collapsed;
+
+            _dividerFraction = 0.5;
+            UpdateDividerPosition(CompareGrid.ActualWidth * 0.5);
+        }
+
+        /// Call when the overlay is cleared so the slider chrome disappears.
+        private void HideComparisonSlider()
+        {
+            DividerLine.Visibility = Visibility.Collapsed;
+            DividerHandle.Visibility = Visibility.Collapsed;
+            BeforeLabel.Visibility = Visibility.Collapsed;
+            AfterLabel.Visibility = Visibility.Collapsed;
+        }
+
+        private void OpenPipeline_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new PipelineWindow(this);
+            win.Show();
+        }
+
+        // Returns the current UI parameters; throws ArgumentException on invalid input.
+        internal AnalysisParameters GetCurrentParameters() => BuildParamsFromUi();
+
         // -------- Parameters --------
 
         private AnalysisParameters BuildParamsFromUi()
@@ -304,6 +410,9 @@ namespace CellAnalyzer.Desktop
             // Contour method as numeric (SelectedIndex)
             int contourMethod = ContourMethodBox.SelectedIndex;
             if (contourMethod < 0) contourMethod = 2;
+
+            // Overlay color as string
+            string overlayColor = (OverlayColorBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "Green";
 
             // Morph-related values (still needed even if morph is off)
             int kernelSize = ParseInt(KernelSizeBox.Text, "Kernel size");
@@ -335,6 +444,7 @@ namespace CellAnalyzer.Desktop
 
                 image_method = imageMethod,
                 contour_method = contourMethod,
+                overlay_color = overlayColor,
 
                 morph_checkbox = morph,
                 kernel_size = kernelSize,
