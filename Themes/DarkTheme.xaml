@@ -7,8 +7,8 @@
     <Color x:Key="BorderColor">#FF2A3140</Color>
     <Color x:Key="TextColor">#FFE6EAF2</Color>
     <Color x:Key="SubtleTextColor">#FFB7C0D4</Color>
-    <Color x:Key="AccentColor">#FF4C8DFF</Color>
-    <Color x:Key="AccentHoverColor">#FF3B78E6</Color>
+    <Color x:Key="AccentColor">#761BAB</Color>
+    <Color x:Key="AccentHoverColor">#380059</Color>
 
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}"/>

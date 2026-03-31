@@ -1,12 +1,33 @@
 # -*- mode: python ; coding: utf-8 -*-
+# Run from the Python/ directory:
+#   venv\Scripts\pyinstaller CellAnalyzerEngine.spec --distpath Engine
 
+from PyInstaller.utils.hooks import collect_data_files
+
+# Plotly needs its bundled templates and package data at runtime
+datas = collect_data_files('plotly')
 
 a = Analysis(
     ['cli.py'],
-    pathex=[],
+    pathex=['.'],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=[
+        # scipy – connected-component labelling used in basic_contours
+        'scipy.ndimage',
+        'scipy.ndimage._ni_support',
+        'scipy.ndimage._interpolation',
+        # scikit-image modules used in scikit_contours / basic_contours
+        'skimage.io',
+        'skimage.color',
+        'skimage.measure',
+        'skimage.filters',
+        'skimage.morphology',
+        # narwhals is a required runtime dep of plotly.express
+        'narwhals',
+        'narwhals.stable',
+        'narwhals.stable.v1',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,6 +35,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -33,6 +55,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
 coll = COLLECT(
     exe,
     a.binaries,

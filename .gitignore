@@ -319,6 +319,10 @@ __pycache__/
 # Python virtual environment – never commit the venv
 Python/venv/
 
+# PyInstaller output – built artifacts, not source
+Python/build/
+Python/Engine/
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config

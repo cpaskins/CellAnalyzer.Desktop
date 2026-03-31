@@ -12,6 +12,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
+  <!-- Python source files (dev mode only — not needed when the packaged engine is present) -->
   <ItemGroup>
     <None Update="Python\cli.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -34,6 +35,13 @@
     <None Update="Python\Processing\thresholding.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <!-- Packaged Python engine (built by PyInstaller — only present after running the build step) -->
+  <ItemGroup>
+    <Content Include="Python\Engine\**\*" Condition="Exists('Python\Engine')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

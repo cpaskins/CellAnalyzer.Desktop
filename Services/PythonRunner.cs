@@ -42,8 +42,8 @@ namespace CellAnalyzer.Desktop.Services
                 // venv or cli.py not found; fall back to packaged engine if present
             }
 
-            // packaged engine EXE shipped with the app
-            string packagedEngine = Path.Combine(BaseDir, "Python", "Engine", "CellAnalyzerEngine.exe");
+            // packaged engine EXE shipped with the app (PyInstaller COLLECT output)
+            string packagedEngine = Path.Combine(BaseDir, "Python", "Engine", "CellAnalyzerEngine", "CellAnalyzerEngine.exe");
             if (File.Exists(packagedEngine))
             {
                 return (packagedEngine, Path.GetDirectoryName(packagedEngine)!, "");
