@@ -31,7 +31,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['matplotlib', 'matplotlib.pyplot', 'mpl_toolkits'],
     noarchive=False,
     optimize=0,
 )

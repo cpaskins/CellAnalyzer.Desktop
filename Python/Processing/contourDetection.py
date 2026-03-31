@@ -2,7 +2,6 @@ from skimage import io, color, measure, filters, morphology
 import cv2
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 from scipy.ndimage import label, find_objects
 
 # BGR tuples for each user-selectable overlay color
